@@ -1,0 +1,8 @@
+.vscode
+build
+dist
+venv
+
+*.spec
+*.mp3
+*.txt
