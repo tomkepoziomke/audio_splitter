@@ -77,7 +77,7 @@ class Defaults:
     TOLERANCE           = 0
     MIN_SILENCE_LENGTH  = 100
     SILENCE_THRESHOLD   = -70
-    SEEK_STEP           = 2
+    SEEK_STEP           = 20
 
 def duration_string_to_millis(duration: str):
 
@@ -172,6 +172,16 @@ def parse_album_info(album_path: str):
         
     return tracks
 
+def strip_audio_segment(audio: pydub.AudioSegment, silence_threshold: int = Defaults.SILENCE_THRESHOLD):
+    '''
+        Strips leading and trailing silence from a segment.
+    '''
+    leading_silence = silence.detect_leading_silence(audio, silence_threshold = silence_threshold, chunk_size = Defaults.SEEK_STEP)
+    trailing_silence = silence.detect_leading_silence(audio.reverse(), silence_threshold = silence_threshold, chunk_size = Defaults.SEEK_STEP)
+    trailing_silence = max(trailing_silence, 1) # without this, list comprehension looks like [:-0] which is utterly different to [:-1]!
+    audio = audio[leading_silence:-trailing_silence]
+    return audio, leading_silence, trailing_silence
+
 def process_audio_into_segments(audio_path: str, 
                                 tracklist: list, 
                                 tolerance: int = Defaults.TOLERANCE, 
@@ -186,11 +196,9 @@ def process_audio_into_segments(audio_path: str,
     audio_path = sanitize_filepath(audio_path)
     audio = pydub.AudioSegment.from_file(audio_path)
 
+
     # trimming leading and trailing silence
-    leading_silence = silence.detect_leading_silence(audio, silence_threshold = silence_threshold, chunk_size = Defaults.SEEK_STEP)
-    ending_silence = silence.detect_leading_silence(audio.reverse(), silence_threshold = silence_threshold, chunk_size = Defaults.SEEK_STEP)
-    ending_silence = max(ending_silence, 1) # without this, list comprehension looks like [:-0] which is utterly different to [:-1]!
-    audio = audio[leading_silence:-ending_silence]
+    audio, leading_silence, trailing_silence = strip_audio_segment(audio, silence_threshold)
     
     # calculating dBFS and adjusting
     if target_dBFS != None:
@@ -212,7 +220,8 @@ def process_audio_into_segments(audio_path: str,
             silence_begin = silent_segment[0] - time_offset
             silence_end = silent_segment[1] - time_offset
             if track.duration - tolerance <= silence_end:
-                audio_segments.append((audio[:silence_begin], track))
+                audio_segment, _, _ = strip_audio_segment(audio[:silence_begin])
+                audio_segments.append((audio_segment, track))
                 audio = audio[silence_end:]
                 time_offset += silence_end
                 gui.log_splice(silent_segment[0] + leading_silence, silent_segment[1] + leading_silence)
