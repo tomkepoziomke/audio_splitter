@@ -6,7 +6,6 @@ import os
 from dataclasses import dataclass
 from pathvalidate import sanitize_filepath
 import argparse
-from enum import Enum
 
 @dataclass
 class SongInfo:
@@ -231,12 +230,14 @@ def process_audio_into_segments(audio_path: str,
     return audio_segments
 
 def export_audio_segments(segments, output_dir = '.'):
-    
     '''
         Exports segments track-by-track to the output directory.
     '''
 
     def sanitize_title(title: str):
+        '''
+            Sanitizes track title (for proper export, e.g. replaces slashes so the tokens preceding are not interpreted as a folder).
+        '''
         title = sanitize_filepath(title)
         title = title.replace(r'/', ' ')
         title = title.replace('\\', ' ')
@@ -258,20 +259,17 @@ def export_audio_segments(segments, output_dir = '.'):
 
 def main(args):
     tracklist = parse_album_info(args.tracklist)
-    segments = process_audio_into_segments(args.input, tracklist, args.tolerance, args.loudness, args.silence_threshold, args.silence_length)
+    segments = process_audio_into_segments(args.input, tracklist, args.tolerance, args.loudness, args.silence_threshold, args.silence_duration)
     export_audio_segments(segments, args.output)
 
 if __name__ == '__main__':
-
-
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', help = 'Audio file to be split.', required = True)
     parser.add_argument('-l', '--tracklist', help = 'Tracklist of the album.', required = True)
     parser.add_argument('-o', '--output', help = f'Output directory (default: {Defaults.OUTPUT_DIRECTORY}).', default = Defaults.OUTPUT_DIRECTORY)
     parser.add_argument('-t', '--tolerance', type = int, help = f'Margin of error (in ms) for track lengths (default: {Defaults.TOLERANCE}).', default = Defaults.TOLERANCE)
     parser.add_argument('-v', '--loudness', type = float, help = f'Adjusts average dBFS loudness to the given level (default: {Defaults.LOUDNESS}).', default = Defaults.LOUDNESS)
-    parser.add_argument('-T', '--silence_threshold', type = int, help = f'Sets the silence threshold, e.g. the dBFS value below which audio is considered silence (default: {Defaults.SILENCE_THRESHOLD})', default = Defaults.SILENCE_THRESHOLD)
-    parser.add_argument('-L', '--silence_length', type = int, help = f'Sets the minimum silence duration, e.g. silent segments below this duration will not be considered silent (default: {Defaults.MIN_SILENCE_LENGTH}).', default = Defaults.MIN_SILENCE_LENGTH)
+    parser.add_argument('-s', '--silence_threshold', type = int, help = f'Sets the silence threshold, e.g. the dBFS value below which audio is considered silence (default: {Defaults.SILENCE_THRESHOLD}).', default = Defaults.SILENCE_THRESHOLD)
+    parser.add_argument('-d', '--silence_duration', type = int, help = f'Sets the minimum silence duration, e.g. silent segments below this duration will not be considered silent (default: {Defaults.MIN_SILENCE_LENGTH}).', default = Defaults.MIN_SILENCE_LENGTH)
     args = parser.parse_args()
     main(args)
