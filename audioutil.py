@@ -54,7 +54,7 @@ def _file_hash(filename: str):
             hl.update(chunk)
     return hl.hexdigest()
 
-def scan_for_segments(patterns):
+def scan_for_segments(patterns, verbose = False):
     '''
         Scans for audio files matching one of the pattern from the list.
     '''
@@ -65,16 +65,12 @@ def scan_for_segments(patterns):
     for match in matches:
         match_hash = _file_hash(match)
         if match_hash not in segments:
-            segments[match_hash] = (match, pydub.AudioSegment.from_file(match))
+            path, segment = match, pydub.AudioSegment.from_file(match)
+            segments[match_hash] = (path, segment)
+            if verbose:
+                print(f'Audio file: {os.path.basename(path)}')
+                print(f'Duration: {duration_millis_to_str(len(segment)):10s} | Loudness: {segment.dBFS:3.2f} dbFS')
     return segments.values()
-    
-def segments_info(segments):
-    '''
-        Displays file info for each of the audio segments.
-    '''
-    for path, segment in segments:
-        print(f'Audio file: {path}')
-        print(f'Duration: {duration_millis_to_str(len(segment)):10s} | Loudness: {segment.dBFS:3.2f} dbFS')
 
 def segments_strip(segments: list, silence_threshold: int = Defaults.SILENCE_THRESHOLD):
     '''
@@ -134,15 +130,13 @@ def segments_export(segments, output_dir):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         
-        print(f'Exporting adjusted track: {os.path.basename(path)} ({duration_millis_to_str(len(segment), short = True)}, {segment.dBFS:.2f} dBFS)')
+        print(f'{os.path.basename(path)} ({duration_millis_to_str(len(segment), short = True)}, {segment.dBFS:.2f} dBFS)')
         tags = _get_simple_audio_metadata(path)
         segment.export(sanitize_filepath(output_dir + '/' + os.path.basename(path)), format = 'mp3', bitrate = '192k', tags = tags)
 
 def main(args):
-    audio_segments = scan_for_segments(args.input)
+    audio_segments = scan_for_segments(args.input, verbose = args.list)
     export = False
-    if args.list:
-        segments_info(audio_segments)
     if args.strip:
         audio_segments = segments_strip(audio_segments, args.strip)
         export = True

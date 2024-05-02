@@ -148,7 +148,7 @@ def parse_album_info(album_path: str):
     album_regex = re.compile(r'^\s*Album:\s*([^\s].*[^\s])\s*$')
     artist_regex = re.compile(r'^\s*Artist:\s*([^\s].*[^\s])\s*$')
     year_regex = re.compile(r'^\s*Year:\s*(\d+)\s*$')
-    song_regex = re.compile(r'^\s*(\d+)\.\s*"(.*)"\s*.*\s*(\d+:\d+)\s*$')
+    song_regex = re.compile(r'^\s*(\d+)\.\s*"(.*)".*\b(\d+:\d+)\s*$')
 
     tracks = []
     album = ''
