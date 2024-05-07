@@ -198,16 +198,16 @@ def process_audio_into_segments(audio_path: str,
 
     # trimming leading and trailing silence
     audio, leading_silence, trailing_silence = strip_audio_segment(audio, silence_threshold)
-    
-    # calculating dBFS and adjusting
-    if target_dBFS != None:
-        audio_loudness = audio.dBFS
-        audio += (target_dBFS - audio_loudness)
 
     # detecting other silent segments
     silent_segments = silence.detect_silence(audio, min_silence_len = min_silence_length, silence_thresh = silence_threshold, seek_step = Defaults.SEEK_STEP)
     silent_segments.append([len(audio), len(audio)]) # artificially adding silence after the last track, so the following logic still holds for the last song
     silent_gen = (silence for silence in silent_segments)
+    
+    # calculating dBFS and adjusting
+    if target_dBFS != None:
+        audio_loudness = audio.dBFS
+        audio += (target_dBFS - audio_loudness)
 
     audio_segments = []
     time_offset = 0
