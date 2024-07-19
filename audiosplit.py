@@ -77,6 +77,7 @@ class Defaults:
     MIN_SILENCE_LENGTH  = 100
     SILENCE_THRESHOLD   = -70
     SEEK_STEP           = 20
+    STRIP_SEEK_STEP     = 1
 
 def duration_string_to_millis(duration: str):
 
@@ -175,8 +176,8 @@ def strip_audio_segment(audio: pydub.AudioSegment, silence_threshold: int = Defa
     '''
         Strips leading and trailing silence from a segment.
     '''
-    leading_silence = silence.detect_leading_silence(audio, silence_threshold = silence_threshold, chunk_size = Defaults.SEEK_STEP)
-    trailing_silence = silence.detect_leading_silence(audio.reverse(), silence_threshold = silence_threshold, chunk_size = Defaults.SEEK_STEP)
+    leading_silence = silence.detect_leading_silence(audio, silence_threshold = silence_threshold, chunk_size = Defaults.STRIP_SEEK_STEP)
+    trailing_silence = silence.detect_leading_silence(audio.reverse(), silence_threshold = silence_threshold, chunk_size = Defaults.STRIP_SEEK_STEP)
     trailing_silence = max(trailing_silence, 1) # without this, list comprehension looks like [:-0] which is utterly different to [:-1]!
     audio = audio[leading_silence:-trailing_silence]
     return audio, leading_silence, trailing_silence
